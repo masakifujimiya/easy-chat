@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ja">
 
@@ -32,55 +33,72 @@
 
   <!-- App Styling -->
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
+        href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=ja">
   <link rel="stylesheet" href="styles/main.css">
 </head>
 
 <body>
   <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
 
-    <!-- Header section containing logo -->
+    <!-- Header -->
     <header class="mdl-layout__header mdl-color-text--white mdl-color--light-red-700">
       <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
         <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
           <h3><i class="material-icons">chat_bubble_outline</i> Easy Chat</h3>
-        </div>
-        <div id="user-container">
-          <div hidden id="user-pic"></div>
-          <div hidden id="user-name"></div>
-          <button hidden id="sign-out" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
-            Sign-out
-          </button>
-          <button hidden id="sign-in" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
-            <i class="material-icons">account_circle</i>Sign-in with Google
-          </button>
+
+          <!-- 右寄せスペース -->
+          <div class="mdl-layout-spacer"></div>
+
+          <!-- ユーザー情報＆ボタン -->
+          <div id="user-container" class="mdl-layout__header-row">
+            <div hidden id="user-pic"></div>
+            <div hidden id="user-name" style="margin-right:12px;"></div>
+
+            <!-- ★ サインアウト（ログイン時のみ表示） -->
+            <button hidden id="sign-out"
+                    class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white"
+                    title="サインアウト">
+              <i class="material-icons" style="vertical-align:middle;margin-right:4px;">logout</i> Sign-out
+            </button>
+
+            <!-- ★ サインイン（未ログイン時のみ表示） -->
+            <button hidden id="sign-in"
+                    class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white"
+                    title="ログインへ">
+              <i class="material-icons" style="vertical-align:middle;margin-right:4px;">account_circle</i> Sign-in
+            </button>
+          </div>
         </div>
       </div>
     </header>
 
+    <!-- Main -->
     <main class="mdl-layout__content mdl-color--grey-100">
       <div id="messages-card-container" class="mdl-cell mdl-cell--12-col mdl-grid">
 
-        <!-- Messages container -->
+        <!-- Messages -->
         <div id="messages-card"
-          class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+             class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
           <div id="messages-box" class="mdl-card__supporting-text mdl-color-text--grey-600">
             <div id="messages">
               <span id="message-filler"></span>
             </div>
+
+            <!-- 送信フォーム -->
             <form id="message-form" action="#">
               <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                <input class="mdl-textfield__input" type="text" id="message">
+                <input class="mdl-textfield__input" type="text" id="message" autocomplete="off">
                 <label class="mdl-textfield__label" for="message">Message...</label>
               </div>
               <button id="submit" disabled type="submit"
-                class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+                      class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
                 Send
               </button>
             </form>
           </div>
         </div>
 
+        <!-- Snackbar -->
         <div id="must-signin-snackbar" class="mdl-js-snackbar mdl-snackbar">
           <div class="mdl-snackbar__text"></div>
           <button class="mdl-snackbar__action" type="button"></button>
@@ -90,13 +108,27 @@
     </main>
   </div>
 
-  <!-- Initialize Firebase -->
+  <!-- Firebase SDK（Hosting の自動ロード v7系） -->
   <script src="/__/firebase/7.23.0/firebase-app.js"></script>
   <script src="/__/firebase/7.23.0/firebase-auth.js"></script>
   <script src="/__/firebase/7.23.0/firebase-firestore.js"></script>
   <script src="/__/firebase/init.js"></script>
 
+  <!-- アプリ本体 -->
   <script src="scripts/main.js"></script>
-</body>
 
+  <!-- 追加：ヘッダーの「Sign-in」ボタンで login.html へ遷移させる（保険） -->
+  <script>
+    // main.js 側でもクリック時に login.html へ飛ばす実装を入れていますが、
+    // HTML 側だけでも動くように保険で仕込んでおきます（重複しても支障なし）
+    document.addEventListener('DOMContentLoaded', function () {
+      var signInBtn = document.getElementById('sign-in');
+      if (signInBtn) {
+        signInBtn.addEventListener('click', function () {
+          window.location.href = './login.html';
+        });
+      }
+    });
+  </script>
+</body>
 </html>

@@ -1,56 +1,188 @@
 <!doctype html>
 <html lang="ja">
-
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="description" content="Learn how to use the Firebase platform on the Web">
+  <meta name="description" content="Easy Chat - Email/Password Login">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Easy Chat</title>
+  <title>Easy Chat - Login</title>
 
-  <!-- Material Design Lite -->
+  <!-- Material Design Lite（安定CDNに変更） -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.orange-indigo.min.css">
-  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+  <!-- 403 を回避するため code.getmdl.io ではなく jsDelivr を使用 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/material-design-lite@1.3.0/material.indigo-pink.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/material-design-lite@1.3.0/material.min.js"></script>
 
-  <!-- App Styling -->
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
-  <link rel="stylesheet" href="styles/main.css">
+  <!-- Roboto + 独自スタイル -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&lang=ja">
+  <style>
+    body { font-family: Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; }
+    .page { min-height: 100vh; }
+    .center-grid { min-height: calc(100vh - 1px); align-items: center; }
+    .mdl-card { width: 100%; max-width: 420px; margin: 0 auto; }
+    #message { min-height: 1.6em; color: #d32f2f; margin-top: 8px; }
+    .success { color: #2e7d32 !important; }
+  </style>
 </head>
 
 <body>
-  <div class="mdl-layout mdl-js-layout">
-    <main class="mdl-layout__content mdl-color--grey-100">
-      <div class="mdl-grid">
-        <div class="mdl-cell mdl-cell--4-col mdl-cell--4-col-tablet mdl-cell--4-col-desktop"></div>
+  <div class="mdl-layout mdl-js-layout page mdl-color--grey-100">
+    <main class="mdl-layout__content">
+      <div class="mdl-grid center-grid">
+        <div class="mdl-cell mdl-cell--4-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
 
-        <div class="mdl-card mdl-shadow--6dp mdl-cell mdl-cell--4-col mdl-cell--4-col-tablet mdl-cell--4-col-desktop">
-          <div class="mdl-card__title mdl-color--primary mdl-color-text--white relative">
+        <div class="mdl-card mdl-shadow--6dp mdl-cell mdl-cell--4-col mdl-cell--8-col-tablet mdl-cell--12-col-phone">
+          <div class="mdl-card__title mdl-color--primary mdl-color-text--white">
             <h2 class="mdl-card__title-text">Easy Chat</h2>
           </div>
+
           <div class="mdl-card__supporting-text">
-            Sample Login.</br></br>
-            Login with Google Auth.
-          </div>
-          <div class="mdl-card__actions">
-            <div class="mdl-grid">
-              <button id="sign-in"
-                class="mdl-cell mdl-cell--12-col mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-js-ripple-effect mdl-color-text--white">Login</button>
-            </div>
+            <p style="margin-top:0">メールアドレスとパスワードでログインしてください。</p>
+
+            <!-- ログイン専用フォーム（サインアップなし） -->
+            <form id="email-login-form" novalidate>
+              <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:100%">
+                <input class="mdl-textfield__input" type="email" id="email" autocomplete="username" required />
+                <label class="mdl-textfield__label" for="email">メールアドレス</label>
+              </div>
+
+              <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:100%">
+                <input class="mdl-textfield__input" type="password" id="password" autocomplete="current-password" required />
+                <label class="mdl-textfield__label" for="password">パスワード</label>
+              </div>
+
+              <div class="mdl-grid" style="margin: 8px 0 0 0; padding:0">
+                <button id="login-btn" type="submit"
+                        class="mdl-cell mdl-cell--12-col mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
+                  ログイン
+                </button>
+              </div>
+
+              <div style="margin-top:8px">
+                <a href="#" id="reset-link">パスワードをお忘れの方</a>
+              </div>
+
+              <p id="message" aria-live="polite"></p>
+            </form>
           </div>
         </div>
 
-        <div class="mdl-cell mdl-cell--4-col mdl-cell--4-col-tablet mdl-cell--4-col-desktop"></div>
+        <div class="mdl-cell mdl-cell--4-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
       </div>
     </main>
   </div>
 
-  <!-- Initialize Firebase -->
+  <!-- Firebase SDK（Hosting の自動ロード / v7 系） -->
   <script src="/__/firebase/7.23.0/firebase-app.js"></script>
   <script src="/__/firebase/7.23.0/firebase-auth.js"></script>
   <script src="/__/firebase/7.23.0/firebase-firestore.js"></script>
   <script src="/__/firebase/init.js"></script>
 
-  <script src="scripts/login.js"></script>
+  <!-- ログイン処理（サインインのみ・サインアップ呼び出しなし） -->
+  <script>
+    (function () {
+      'use strict';
+
+      // init.js により initializeApp 済み
+      const auth = firebase.auth();
+
+      const form    = document.getElementById('email-login-form');
+      const emailEl = document.getElementById('email');
+      const passEl  = document.getElementById('password');
+      const msgEl   = document.getElementById('message');
+      const resetEl = document.getElementById('reset-link');
+
+      // 既にログイン済みなら画面遷移（必要に応じてURL変更）
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          console.log('ログイン済み:', user.uid, user.email);
+          // 例：チャット画面へ
+          // location.href = '/chat.html';
+        }
+      });
+
+      // ログイン（サインアップは呼ばない）
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg('');
+
+        const email = (emailEl.value || '').trim();
+        const password = passEl.value || '';
+
+        if (!email || !password) {
+          return msg('メールとパスワードを入力してください。');
+        }
+
+        // MDL のエラースタイルを反映
+        markField(emailEl, false);
+        markField(passEl, false);
+
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+          msg('ログインしました。', true);
+          // onAuthStateChanged で遷移させる場合はここで何もしない
+        } catch (err) {
+          console.error(err);
+          if (err && err.code) {
+            switch (String(err.code)) {
+              case 'auth/invalid-email':
+                markField(emailEl, true);
+                msg('メールアドレスの形式が正しくありません。');
+                break;
+              case 'auth/user-disabled':
+                msg('このユーザーは無効化されています。');
+                break;
+              case 'auth/user-not-found':
+              case 'auth/wrong-password':
+                markField(passEl, true);
+                msg('メールまたはパスワードが違います。');
+                break;
+              case 'auth/too-many-requests':
+                msg('試行回数が多すぎます。しばらくしてから再試行してください。');
+                break;
+              default:
+                msg('ログインに失敗しました。時間をおいて再試行してください。');
+            }
+          } else {
+            msg('ログインに失敗しました。時間をおいて再試行してください。');
+          }
+        }
+      });
+
+      // パスワード再設定メール送信
+      resetEl.addEventListener('click', async (e) => {
+        e.preventDefault();
+        msg('');
+        const email = (emailEl.value || '').trim();
+        if (!email) {
+          return msg('再設定するメールアドレスを入力してください。');
+        }
+        try {
+          await auth.sendPasswordResetEmail(email);
+          msg('パスワード再設定用のメールを送信しました。', true);
+        } catch (err) {
+          console.error(err);
+          msg('再設定メールの送信に失敗しました。メールアドレスをご確認ください。');
+        }
+      });
+
+      function msg(text, success) {
+        msgEl.textContent = text || '';
+        if (success) {
+          msgEl.classList.add('success');
+        } else {
+          msgEl.classList.remove('success');
+        }
+      }
+
+      function markField(inputEl, isError) {
+        const wrapper = inputEl.closest('.mdl-textfield');
+        if (!wrapper) return;
+        if (isError) wrapper.classList.add('is-invalid');
+        else wrapper.classList.remove('is-invalid');
+      }
+    })();
+  </script>
 </body>
+</html>
+``

@@ -1,4 +1,4 @@
-// main.js
+
 'use strict';
 
 class EasyChat {
@@ -6,11 +6,13 @@ class EasyChat {
    * @desc Template for messages.
    */
   static get MESSAGE_TEMPLATE() {
-    return ('<div class="message-container">' +
-      '<div class="spacing"><div class="pic"></div></div>' +
-      '<div class="message"></div>' +
-      '<div class="name"></div>' +
-      '</div>');
+    return (
+      '<div class="message-container">' +
+        '<div class="spacing"><div class="pic"></div></div>' +
+        '<div class="message"></div>' +
+        '<div class="name"></div>' +
+      '</div>'
+    );
   }
 
   /**
@@ -20,196 +22,226 @@ class EasyChat {
     this.checkSetup();
 
     // Shortcuts to DOM Elements.
-    this.messageList = document.getElementById('messages');
-    this.messageForm = document.getElementById('message-form');
-    this.messageInput = document.getElementById('message');
-    this.submitButton = document.getElementById('submit');
-    this.imageForm = document.getElementById('image-form');
-    this.mediaCapture = document.getElementById('mediaCapture');
-    this.userPic = document.getElementById('user-pic');
-    this.userName = document.getElementById('user-name');
-    this.signInButton = document.getElementById('sign-in');
-    this.signOutButton = document.getElementById('sign-out');
+    this.messageList    = document.getElementById('messages');
+    this.messageForm    = document.getElementById('message-form');
+    this.messageInput   = document.getElementById('message');
+    this.submitButton   = document.getElementById('submit');
+    this.imageForm      = document.getElementById('image-form');
+    this.mediaCapture   = document.getElementById('mediaCapture');
+    this.userPic        = document.getElementById('user-pic');
+    this.userName       = document.getElementById('user-name');
+    this.signInButton   = document.getElementById('sign-in');
+    this.signOutButton  = document.getElementById('sign-out');
     this.signInSnackbar = document.getElementById('must-signin-snackbar');
 
-    // Saves message on form submit.
+    // Events.
     this.messageForm.addEventListener('submit', this.saveMessage.bind(this));
     this.signOutButton.addEventListener('click', this.signOut.bind(this));
-    this.signInButton.addEventListener('click', this.signIn.bind(this));
+
+    // メール＋パス運用では、チャット画面のサインインボタンは login.html に誘導
+    if (this.signInButton) {
+      this.signInButton.addEventListener('click', () => {
+        window.location.href = './login.html';
+      });
+    }
 
     // Toggle for the button.
-    var buttonTogglingHandler = this.toggleButton.bind(this);
+    const buttonTogglingHandler = this.toggleButton.bind(this);
     this.messageInput.addEventListener('keyup', buttonTogglingHandler);
     this.messageInput.addEventListener('change', buttonTogglingHandler);
 
     this.initFirebase();
     this.initAuth();
 
-    // Firestoreからメッセージ読み込み
+    // 既存コード互換：明示の初期ロードが必要ならここで。
     this.loadMessages();
   }
 
-  // Sets up Firebase features.
+  // --- Firebase / Firestore 初期化 -------------------------------------------------
+
   initFirebase() {
-    // Firestoreを使うための初期化処理
+    // Firestore 初期化
     this.firestore = firebase.firestore();
-  };
 
-  // Sets up Firebase Authentication.
-  initAuth() {
-  }
-
-  // Loads chat messages history and listens for upcoming ones.
-  loadMessages() {
-    // TODO : 08. firestoreから読み込み
-    this.firestore.collection('messages')
+    // Realtime update listener
+    this.unsubscribeMessages = this.firestore
+      .collection('messages')
       .orderBy('timestamp')
-      .get()
-      .then((querySnapshot) => {
-        querySnapshot.forEach((doc) => {
-          this.displayMessage(doc.id, doc.data().name, doc.data().message, 'images/profile_placeholder.png')
+      .onSnapshot((querySnapshot) => {
+        querySnapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const data = change.doc.data() || {};
+            this.displayMessage(
+              change.doc.id,
+              data.name,
+              data.message,
+              data.photoURL
+            );
+          }
         });
       });
-    };
+  }
 
-  // Saves a new message on the Firestore.
+  initAuth() {
+    // Firebase Auth 初期化
+    this.auth = firebase.auth();
+    this.auth.onAuthStateChanged(this.onAuthStateChanged.bind(this));
+  }
+
+  // --- 認証状態変化 ---------------------------------------------------------------
+
+  onAuthStateChanged(user) {
+    if (user) {
+      // 1) displayName が未設定なら、メールで上書き（初回のみ）
+      if (!user.displayName && user.email) {
+        user.updateProfile({ displayName: user.email })
+          .catch((err) => console.error('updateProfile failed:', err));
+      }
+
+      // 2) ヘッダ表示（フォールバックは email）
+      const profilePicUrl = this.resolvePhotoURL(user);
+      const nameText = user.displayName || user.email || '匿名';
+
+      if (this.userPic)  this.userPic.style.backgroundImage = `url(${profilePicUrl})`;
+      if (this.userName) this.userName.textContent = nameText;
+
+      // UI 切り替え
+      this.userName?.removeAttribute('hidden');
+      this.userPic?.removeAttribute('hidden');
+      this.signOutButton?.removeAttribute('hidden');
+      this.signInButton?.setAttribute('hidden', 'true');
+
+      // 必要に応じて初期ロード（リアルタイム購読は既に設定済み）
+      this.loadMessages?.();
+    } else {
+      // ログアウト時 UI
+      this.userName?.setAttribute('hidden', 'true');
+      this.userPic?.setAttribute('hidden', 'true');
+      this.signOutButton?.setAttribute('hidden', 'true');
+      this.signInButton?.removeAttribute('hidden');
+
+      // ログイン画面へ
+      window.location.href = './login.html';
+    }
+  }
+
+  // --- ユーティリティ --------------------------------------------------------------
+
+  resolvePhotoURL(user) {
+    return (user && user.photoURL) || '/images/profile_placeholder.png';
+  }
+
+  // Firestore 初期ロード（必要な場合のみ。リアルタイムで十分なら中身は空でもOK）
+  loadMessages() {
+    // 既存コメントアウトと同等。リアルタイム購読があるため必須ではありません。
+    // 必要ならここで最新 N 件の初期読み込みを実装してください。
+  }
+
+  // --- 送信 / 保存 ----------------------------------------------------------------
+
   saveMessage(e) {
-    // TODO : 09. 送信時のFirestore保存処理を追加
-    if (this.messageInput.value) {
-      this.firestore.collection('messages').add({
-          name: "User Name",
+    e.preventDefault();
+
+    if (this.messageInput.value && this.checkSignedInWithMessage()) {
+      const user = this.auth.currentUser;
+      const name = (user && (user.displayName || user.email)) || '匿名';
+      const photoURL = this.resolvePhotoURL(user);
+
+      this.firestore
+        .collection('messages')
+        .add({
+          name: name,
           message: this.messageInput.value,
-          photoURL: '/images/profile_placeholder.png',
+          photoURL: photoURL,
           timestamp: new Date()
         })
-        .catch(function (error) {
-          console.error("Error adding document: ", error);
+        .catch((error) => {
+          console.error('Error adding document: ', error);
         });
 
       this.resetMaterialTextfield(this.messageInput);
       this.toggleButton();
-    };
-};
+    }
+  }
 
-  // Signs-in Easy Chat.
+  // --- サインイン / サインアウト ---------------------------------------------------
+
+  // Google サインインは廃止。メール＋パスは login.html 側で行う。
   signIn() {
-    // サインインボタンが押されたらGoogleログイン
-    var provider = new firebase.auth.GoogleAuthProvider();
-    this.auth.signInWithPopup(provider);
-  };
+    window.location.href = './login.html';
+  }
 
-  // Signs-out of Easy Chat.
   signOut() {
-    // サインアウトボタンが押されたらログアウト
     this.auth.signOut();
-  };
+  }
 
-  // Triggers when the auth state change for instance when the user signs-in or signs-out.
-  onAuthStateChanged(user) {
-    if (user) {
-      // ユーザープロファイルをロード
-      var profilePicUrl = user.photoURL;
-      var userName = user.displayName;
+  // --- 各種 UI 補助 ---------------------------------------------------------------
 
-      // Set the user's profile pic and name.
-      this.userPic.style.backgroundImage = 'url(' + profilePicUrl + ')';
-      this.userName.textContent = userName;
-
-      // Show user's profile and sign-out button.
-      this.userName.removeAttribute('hidden');
-      this.userPic.removeAttribute('hidden');
-      this.signOutButton.removeAttribute('hidden');
-
-      // Hide sign-in button.
-      this.signInButton.setAttribute('hidden', 'true');
-
-      // We load currently existing chant messages.
-      this.loadMessages();
-    } else {
-      // Hide user's profile and sign-out button.
-      this.userName.setAttribute('hidden', 'true');
-      this.userPic.setAttribute('hidden', 'true');
-      this.signOutButton.setAttribute('hidden', 'true');
-
-      // Show sign-in button.
-      this.signInButton.removeAttribute('hidden');
-
-      // ログアウト時にログイン画面に遷移
-      window.location.href = './login.html';
-    }
-  };
-
-  // Returns true if user is signed-in. Otherwise false and displays a message.
   checkSignedInWithMessage() {
-    // 認証されているかチェック
-    if (this.auth.currentUser) {
-      return true;
-    }
+    if (this.auth.currentUser) return true;
 
-    // Display a message to the user using a Toast.
-    var data = {
-      message: 'You must sign-in first',
-      timeout: 2000
-    };
-
-    this.signInSnackbar.MaterialSnackbar.showSnackbar(data);
-
+    // Snackbar で通知（存在すれば）
+    const data = { message: 'You must sign-in first', timeout: 2000 };
+    this.signInSnackbar?.MaterialSnackbar?.showSnackbar(data);
     return false;
-  };
+  }
 
-  // Resets the given MaterialTextField.
   resetMaterialTextfield(element) {
     element.value = '';
-    element.parentNode.MaterialTextfield.boundUpdateClassesHandler();
-  };
+    // MDL の表示更新
+    if (element.parentNode && element.parentNode.MaterialTextfield) {
+      element.parentNode.MaterialTextfield.boundUpdateClassesHandler();
+    }
+  }
 
-  // Displays a Message in the UI.
   displayMessage(key, name, text, picUrl) {
-    var div = document.getElementById(key);
+    let div = document.getElementById(key);
 
     if (!div) {
-      var container = document.createElement('div');
+      const container = document.createElement('div');
       container.innerHTML = EasyChat.MESSAGE_TEMPLATE;
       div = container.firstChild;
       div.setAttribute('id', key);
       this.messageList.appendChild(div);
     }
+
     if (picUrl) {
-      div.querySelector('.pic').style.backgroundImage = 'url(' + picUrl + ')';
+      div.querySelector('.pic').style.backgroundImage = `url(${picUrl})`;
     }
-    div.querySelector('.name').textContent = name;
-    var messageElement = div.querySelector('.message');
+
+    // name が空の既存データ対策
+    div.querySelector('.name').textContent = name || '匿名';
+
+    const messageElement = div.querySelector('.message');
     if (text) {
+      // まずプレーンテキストとして安全に代入 → その後改行のみ <br> に変換
       messageElement.textContent = text;
-      // 改行を<br>で置き換え.
       messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
     }
 
-    // Show the card fading-in.
-    setTimeout(function () {
-      div.classList.add('visible')
-    }, 1);
+    // フェードイン＆スクロール
+    setTimeout(() => div.classList.add('visible'), 1);
     this.messageList.scrollTop = this.messageList.scrollHeight;
     this.messageInput.focus();
-  };
+  }
 
-  // 送信ボタンの表示を切り替え
   toggleButton() {
     if (this.messageInput.value) {
       this.submitButton.removeAttribute('disabled');
     } else {
       this.submitButton.setAttribute('disabled', 'true');
     }
-  };
+  }
 
-  // Checks that the Firebase SDK has been correctly setup and configured.
   checkSetup() {
     if (!window.firebase || !(firebase.app instanceof Function) || !firebase.app().options) {
-      window.alert('You have not configured and imported the Firebase SDK. ' +
+      window.alert(
+        'You have not configured and imported the Firebase SDK. ' +
         'Make sure you go through the codelab setup instructions and make ' +
-        'sure you are running the codelab using `firebase serve`');
+        'sure you are running the codelab using `firebase serve`'
+      );
     }
-  };
+  }
 }
 
 window.onload = function () {
