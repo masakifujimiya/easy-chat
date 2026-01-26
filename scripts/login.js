@@ -6,8 +6,8 @@
  * ログイン成功/失敗時の遷移先
  * - 相対パスでも絶対URL（https://...）でも可
  */
-const URL_SUCCESS = 'https://xhquemdkiwvakjq.web.app/Vuetify3.html';                    // ← A：成功時の遷移先（例：トップ/チャット画面）
-const URL_FAILED  = 'https://vuetifyjs.com/ja/getting-started/installation/';  // ← B：失敗時の遷移先（例：ログイン画面＋エラー）
+const URL_SUCCESS = 'https://xhquemdkiwvakjq.web.app/Vuetify3.html';            // A：成功時
+const URL_FAILED  = 'https://vuetifyjs.com/ja/getting-started/installation/';   // B：失敗時
 
 function EasyChat() {
   this.checkSetup();
@@ -32,7 +32,7 @@ EasyChat.prototype.initFirebase = function () {
   // Hosting の /__/firebase/init.js により initializeApp 済み
   this.auth = firebase.auth();
 
-  // ブラウザ/タブを閉じたらログアウトにする（必要なければコメントアウト）
+  // ブラウザ/タブを閉じたらログアウト（要件に応じて NONE/LOCAL へ変更可）
   this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
     .catch((e) => console.warn('setPersistence error:', e));
 
@@ -48,7 +48,7 @@ EasyChat.prototype.onAuthStateChanged = function (user) {
       user.updateProfile({ displayName: user.email }).catch((e) => console.warn('updateProfile:', e));
     }
     // 成功 → A に遷移
-    window.location.href = URL_SUCCESS;
+    window.location.replace(URL_SUCCESS); // 戻るで戻らせたくない場合は replace が便利
   }
 };
 
@@ -61,7 +61,8 @@ EasyChat.prototype.handleSubmit = async function (e) {
   const password = this.passEl?.value || '';
 
   if (!email || !password) {
-    return this.msg('メールとパスワードを入力してください。');
+    this.msg('メールとパスワードを入力してください。');
+    return;
   }
 
   // MDL のエラースタイルをリセット
@@ -73,14 +74,14 @@ EasyChat.prototype.handleSubmit = async function (e) {
 
     // 初回は displayName を email で統一
     if (cred?.user && !cred.user.displayName && cred.user.email) {
-      await cred.user.updateProfile({ displayName: cred.user.email }).catch(() => {});
+      try { await cred.user.updateProfile({ displayName: cred.user.email }); } catch {}
     }
 
     // 成功 → A
-    window.location.href = URL_SUCCESS;
+    window.location.replace(URL_SUCCESS);
 
   } catch (err) {
-    console.error(err);
+    console.error('signIn error:', err);
 
     // フィールド単位のエラー表示（UI用）
     const code = String(err?.code || '');
@@ -88,3 +89,76 @@ EasyChat.prototype.handleSubmit = async function (e) {
       case 'auth/invalid-email':
         this.markField(this.emailEl, true);
         this.msg('メールアドレスの形式が正しくありません。');
+        break;
+      case 'auth/user-disabled':
+        this.msg('このユーザーは無効化されています。');
+        break;
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        this.markField(this.passEl, true);
+        this.msg('メールまたはパスワードが違います。');
+        break;
+      case 'auth/too-many-requests':
+        this.msg('試行回数が多すぎます。しばらくしてから再試行してください。');
+        break;
+      default:
+        this.msg('ログインに失敗しました。時間をおいて再試行してください。');
+        break;
+    }
+
+    // 失敗 → B に遷移（UIメッセージが見えるよう少し待つ）
+    setTimeout(() => {
+      // 戻るでフォームに戻したい場合は href、戻させたくない場合は replace
+      window.location.href = URL_FAILED;
+      // window.location.replace(URL_FAILED);
+    }, 400);
+  }
+};
+
+/** パスワード再設定メール送信 */
+EasyChat.prototype.handleReset = async function (e) {
+  e.preventDefault();
+  this.msg('');
+  const email = (this.emailEl?.value || '').trim();
+  if (!email) return this.msg('再設定するメールアドレスを入力してください。');
+
+  try {
+    await this.auth.sendPasswordResetEmail(email);
+    this.msg('パスワード再設定用のメールを送信しました。', true);
+  } catch (err) {
+    console.error(err);
+    this.msg('再設定メールの送信に失敗しました。メールアドレスをご確認ください。');
+  }
+};
+
+/** メッセージ表示（UI） */
+EasyChat.prototype.msg = function (text, success) {
+  if (!this.msgEl) return;
+  this.msgEl.textContent = text || '';
+  if (success) this.msgEl.classList.add('success');
+  else this.msgEl.classList.remove('success');
+};
+
+/** MDL のエラースタイル切り替え */
+EasyChat.prototype.markField = function (inputEl, isError) {
+  if (!inputEl) return;
+  const wrapper = inputEl.closest('.mdl-textfield');
+  if (!wrapper) return;
+  if (isError) wrapper.classList.add('is-invalid');
+  else wrapper.classList.remove('is-invalid');
+};
+
+/** SDK 準備チェック */
+EasyChat.prototype.checkSetup = function () {
+  if (!window.firebase || !(firebase.app instanceof Function) || !firebase.app().options) {
+    window.alert(
+      'Firebase SDK が正しく設定されていません。' +
+      'Firebase Hosting で /__/firebase/init.js が読み込まれているか確認してください。'
+    );
+  }
+};
+
+window.onload = function () {
+  window.easyChat = new EasyChat();
+};
+``
