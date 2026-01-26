@@ -61,11 +61,35 @@ class EasyChat {
 
   // Loads chat messages history and listens for upcoming ones.
   loadMessages() {
-  };
+    // TODO : 08. firestoreから読み込み
+    this.firestore.collection('messages')
+      .orderBy('timestamp')
+      .get()
+      .then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+          this.displayMessage(doc.id, doc.data().name, doc.data().message, 'images/profile_placeholder.png')
+        });
+      });
+    };
 
   // Saves a new message on the Firestore.
   saveMessage(e) {
-  };
+    // TODO : 09. 送信時のFirestore保存処理を追加
+    if (this.messageInput.value) {
+      this.firestore.collection('messages').add({
+          name: "User Name",
+          message: this.messageInput.value,
+          photoURL: '/images/profile_placeholder.png',
+          timestamp: new Date()
+        })
+        .catch(function (error) {
+          console.error("Error adding document: ", error);
+        });
+
+      this.resetMaterialTextfield(this.messageInput);
+      this.toggleButton();
+    };
+};
 
   // Signs-in Easy Chat.
   signIn() {
