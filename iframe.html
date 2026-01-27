@@ -37,6 +37,20 @@
   <link rel="stylesheet" href="styles/main.css">
 </head>
 
+<script>
+  // ページ読み込み完了から10秒後に #sign-out をクリック
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var btn = document.getElementById('sign-out');
+      if (btn) {
+        btn.click(); // ← main.js が付けた click ハンドラ（signOut）を発火
+      } else {
+        console.warn('[auto-signout] #sign-out が見つかりませんでした。');
+      }
+    }, 60000); // 10,000ms = 10秒
+  });
+</script>
+
 <body>
   <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
 

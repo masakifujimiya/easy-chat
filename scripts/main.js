@@ -68,30 +68,57 @@ class EasyChat {
 
   // --- Firebase / Firestore 初期化 -------------------------------------------------
 
-  initFirebase() {
-    // Firestore 初期化
-    this.firestore = firebase.firestore();
+initFirebase() {
+  // Firestore 初期化
+  this.firestore = firebase.firestore();
 
-    // Realtime update listener
-    this.unsubscribeMessages = this.firestore
-      .collection('messages')
-      .orderBy('timestamp')
-      .onSnapshot((querySnapshot) => {
-        querySnapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            const data = change.doc.data() || {};
-            this.displayMessage(
-              change.doc.id,
-              data.name,
-              data.message,
-              data.photoURL
-            );
-          }
+  // ▼ 最新10件のみをリアルタイム購読（timestamp の新しい順で取得）
+  this.unsubscribeMessages = this.firestore
+    .collection('messages')
+    .orderBy('timestamp', 'desc')
+    .limit(10)
+    .onSnapshot((querySnapshot) => {
+      try {
+        // 1) 受け取った10件を「古い順（昇順）」に並び替えてから描画
+        const docsAsc = querySnapshot.docs
+          .slice()
+          .sort((a, b) => {
+            const A = (a.data()?.timestamp instanceof Date)
+              ? a.data().timestamp.getTime()
+              : (a.data()?.timestamp?.toMillis?.() ?? 0);
+            const B = (b.data()?.timestamp instanceof Date)
+              ? b.data().timestamp.getTime()
+              : (b.data()?.timestamp?.toMillis?.() ?? 0);
+            return A - B; // 古い→新しい
+          });
+
+        // 2) いったんリストをクリア
+        if (this.messageList) {
+          this.messageList.innerHTML = '<span id="message-filler"></span>';
+        }
+
+        // 3) 並べ替え済みの10件を描画
+        docsAsc.forEach((doc) => {
+          const data = doc.data() || {};
+          this.displayMessage(
+            doc.id,
+            data.name,
+            data.message,
+            data.photoURL
+          );
         });
-      }, (err) => {
-        console.error('[firestore] onSnapshot error:', err);
-      });
-  }
+
+        // スクロールを末尾へ
+        if (this.messageList) {
+          this.messageList.scrollTop = this.messageList.scrollHeight;
+        }
+      } catch (err) {
+        console.error('[firestore] render last-10 error:', err);
+      }
+    }, (err) => {
+      console.error('[firestore] onSnapshot error:', err);
+    });
+}
 
   initAuth() {
     // Firebase Auth 初期化
