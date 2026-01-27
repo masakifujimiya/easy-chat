@@ -1,4 +1,3 @@
-
 'use strict';
 
 class EasyChat {
@@ -21,7 +20,7 @@ class EasyChat {
   constructor() {
     this.checkSetup();
 
-    // Shortcuts to DOM Elements.
+    // --- Shortcuts to DOM Elements ---
     this.messageList    = document.getElementById('messages');
     this.messageForm    = document.getElementById('message-form');
     this.messageInput   = document.getElementById('message');
@@ -34,9 +33,13 @@ class EasyChat {
     this.signOutButton  = document.getElementById('sign-out');
     this.signInSnackbar = document.getElementById('must-signin-snackbar');
 
-    // Events.
-    this.messageForm.addEventListener('submit', this.saveMessage.bind(this));
-    this.signOutButton.addEventListener('click', this.signOut.bind(this));
+    // --- Event bindings ---
+    if (this.messageForm) {
+      this.messageForm.addEventListener('submit', this.saveMessage.bind(this));
+    }
+    if (this.signOutButton) {
+      this.signOutButton.addEventListener('click', this.signOut.bind(this));
+    }
 
     // メール＋パス運用では、チャット画面のサインインボタンは login.html に誘導
     if (this.signInButton) {
@@ -45,16 +48,22 @@ class EasyChat {
       });
     }
 
-    // Toggle for the button.
+    // Toggle for the send button.
     const buttonTogglingHandler = this.toggleButton.bind(this);
-    this.messageInput.addEventListener('keyup', buttonTogglingHandler);
-    this.messageInput.addEventListener('change', buttonTogglingHandler);
+    if (this.messageInput) {
+      this.messageInput.addEventListener('keyup', buttonTogglingHandler);
+      this.messageInput.addEventListener('change', buttonTogglingHandler);
+    }
 
+    // --- Firebase initialize ---
     this.initFirebase();
     this.initAuth();
 
-    // 既存コード互換：明示の初期ロードが必要ならここで。
+    // 初期ロード（リアルタイム購読があるため必須ではないが互換のため置く）
     this.loadMessages();
+
+    // デバッグ：DOM 取得状況を一度ログ
+    console.log('[dom] signInButton:', this.signInButton, 'signOutButton:', this.signOutButton);
   }
 
   // --- Firebase / Firestore 初期化 -------------------------------------------------
@@ -79,6 +88,8 @@ class EasyChat {
             );
           }
         });
+      }, (err) => {
+        console.error('[firestore] onSnapshot error:', err);
       });
   }
 
@@ -91,11 +102,13 @@ class EasyChat {
   // --- 認証状態変化 ---------------------------------------------------------------
 
   onAuthStateChanged(user) {
+    console.log('[auth] state:', user ? 'SIGNED-IN' : 'SIGNED-OUT', user?.uid || '');
+
     if (user) {
       // 1) displayName が未設定なら、メールで上書き（初回のみ）
       if (!user.displayName && user.email) {
         user.updateProfile({ displayName: user.email })
-          .catch((err) => console.error('updateProfile failed:', err));
+          .catch((err) => console.error('[auth] updateProfile failed:', err));
       }
 
       // 2) ヘッダ表示（フォールバックは email）
@@ -105,23 +118,30 @@ class EasyChat {
       if (this.userPic)  this.userPic.style.backgroundImage = `url(${profilePicUrl})`;
       if (this.userName) this.userName.textContent = nameText;
 
-      // UI 切り替え
-      this.userName?.removeAttribute('hidden');
-      this.userPic?.removeAttribute('hidden');
-      this.signOutButton?.removeAttribute('hidden');
-      this.signInButton?.setAttribute('hidden', 'true');
+      // --- UI 切り替え：hidden を boolean で確実に制御 ---
+      if (this.userName)      this.userName.hidden = false;
+      if (this.userPic)       this.userPic.hidden = false;
+      if (this.signOutButton) this.signOutButton.hidden = false;
+      if (this.signInButton)  this.signInButton.hidden = true;
 
-      // 必要に応じて初期ロード（リアルタイム購読は既に設定済み）
-      this.loadMessages?.();
+      // MDL の再適用（必要時）
+      if (window.componentHandler) componentHandler.upgradeDom();
+
+      // 既にリアルタイム購読を始めているため、明示のロードは任意
+      if (typeof this.loadMessages === 'function') this.loadMessages();
+
     } else {
-      // ログアウト時 UI
-      this.userName?.setAttribute('hidden', 'true');
-      this.userPic?.setAttribute('hidden', 'true');
-      this.signOutButton?.setAttribute('hidden', 'true');
-      this.signInButton?.removeAttribute('hidden');
+      // --- ログアウト時 UI ---
+      if (this.userName)      this.userName.hidden = true;
+      if (this.userPic)       this.userPic.hidden = true;
+      if (this.signOutButton) this.signOutButton.hidden = true;
+      if (this.signInButton)  this.signInButton.hidden = false;
 
-      // ログイン画面へ
-      window.location.href = './login.html';
+      // MDL の再適用（必要時）
+      if (window.componentHandler) componentHandler.upgradeDom();
+
+      // ログイン画面へ即時遷移（戻る無効にするなら replace）
+      window.location.replace('./login.html');
     }
   }
 
@@ -142,7 +162,7 @@ class EasyChat {
   saveMessage(e) {
     e.preventDefault();
 
-    if (this.messageInput.value && this.checkSignedInWithMessage()) {
+    if (this.messageInput && this.messageInput.value && this.checkSignedInWithMessage()) {
       const user = this.auth.currentUser;
       const name = (user && (user.displayName || user.email)) || '匿名';
       const photoURL = this.resolvePhotoURL(user);
@@ -155,8 +175,11 @@ class EasyChat {
           photoURL: photoURL,
           timestamp: new Date()
         })
+        .then(() => {
+          // 送信成功時の後処理
+        })
         .catch((error) => {
-          console.error('Error adding document: ', error);
+          console.error('[firestore] add message error:', error);
         });
 
       this.resetMaterialTextfield(this.messageInput);
@@ -171,8 +194,15 @@ class EasyChat {
     window.location.href = './login.html';
   }
 
-  signOut() {
-    this.auth.signOut();
+  async signOut() {
+    try {
+      await this.auth.signOut();
+      console.log('[auth] signed out');
+      // 認証リスナー側の遷移に任せても良いが、明示的に遷移させる場合：
+      window.location.replace('./login.html');
+    } catch (e) {
+      console.error('[auth] signOut error:', e);
+    }
   }
 
   // --- 各種 UI 補助 ---------------------------------------------------------------
@@ -182,9 +212,13 @@ class EasyChat {
 
     // Snackbar で通知（存在すれば）
     const data = { message: 'You must sign-in first', timeout: 2000 };
-    this.signInSnackbar?.MaterialSnackbar?.showSnackbar(data);
+    if (this.signInSnackbar && this.signInSnackbar.MaterialSnackbar) {
+      this.signInSnackbar.MaterialSnackbar.showSnackbar(data);
+    } else {
+      console.warn('[ui] snackbar not available:', data.message);
+    }
     return false;
-  }
+    }
 
   resetMaterialTextfield(element) {
     element.value = '';
@@ -213,19 +247,26 @@ class EasyChat {
     div.querySelector('.name').textContent = name || '匿名';
 
     const messageElement = div.querySelector('.message');
-    if (text) {
+    if (text != null && text !== undefined) {
       // まずプレーンテキストとして安全に代入 → その後改行のみ <br> に変換
       messageElement.textContent = text;
-      messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
+      // innerHTML 再代入の前にテキストを取得し、改行を <br> に置換
+      const safe = messageElement.textContent.replace(/\n/g, '<br>');
+      messageElement.innerHTML = safe;
     }
 
     // フェードイン＆スクロール
     setTimeout(() => div.classList.add('visible'), 1);
     this.messageList.scrollTop = this.messageList.scrollHeight;
-    this.messageInput.focus();
+
+    if (this.messageInput) {
+      this.messageInput.focus();
+    }
   }
 
   toggleButton() {
+    if (!this.submitButton || !this.messageInput) return;
+
     if (this.messageInput.value) {
       this.submitButton.removeAttribute('disabled');
     } else {
@@ -244,6 +285,7 @@ class EasyChat {
   }
 }
 
+// 起動
 window.onload = function () {
   // Initializes EasyChat.
   window.easyChat = new EasyChat();

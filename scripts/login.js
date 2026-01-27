@@ -61,7 +61,7 @@ EasyChat.prototype.handleSubmit = async function (e) {
   const password = this.passEl?.value || '';
 
   if (!email || !password) {
-    this.msg('メールとパスワードを入力してください。');
+    this.msg('入力してください。');
     return;
   }
 
@@ -86,23 +86,8 @@ EasyChat.prototype.handleSubmit = async function (e) {
     // フィールド単位のエラー表示（UI用）
     const code = String(err?.code || '');
     switch (code) {
-      case 'auth/invalid-email':
-        this.markField(this.emailEl, true);
-        this.msg('メールアドレスの形式が正しくありません。');
-        break;
-      case 'auth/user-disabled':
-        this.msg('このユーザーは無効化されています。');
-        break;
-      case 'auth/user-not-found':
-      case 'auth/wrong-password':
-        this.markField(this.passEl, true);
-        this.msg('メールまたはパスワードが違います。');
-        break;
-      case 'auth/too-many-requests':
-        this.msg('試行回数が多すぎます。しばらくしてから再試行してください。');
-        break;
       default:
-        this.msg('ログインに失敗しました。時間をおいて再試行してください。');
+        this.msg('時間をおいて再試行してください。');
         break;
     }
 

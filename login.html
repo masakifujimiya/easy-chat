@@ -33,22 +33,20 @@
 
         <div class="mdl-card mdl-shadow--6dp mdl-cell mdl-cell--4-col mdl-cell--8-col-tablet mdl-cell--12-col-phone">
           <div class="mdl-card__title mdl-color--primary mdl-color-text--white">
-            <h2 class="mdl-card__title-text">Easy Chat</h2>
+            <h2 class="mdl-card__title-text"></h2>
           </div>
 
           <div class="mdl-card__supporting-text">
-            <p style="margin-top:0">メールアドレスとパスワードでログインしてください。</p>
-
             <!-- ログイン専用フォーム（サインアップなし） -->
             <form id="email-login-form" novalidate>
               <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:100%">
                 <input class="mdl-textfield__input" type="email" id="email" autocomplete="username" required />
-                <label class="mdl-textfield__label" for="email">メールアドレス</label>
+                <label class="mdl-textfield__label" for="email"></label>
               </div>
 
               <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:100%">
                 <input class="mdl-textfield__input" type="password" id="password" autocomplete="current-password" required />
-                <label class="mdl-textfield__label" for="password">パスワード</label>
+                <label class="mdl-textfield__label" for="password"></label>
               </div>
 
               <div class="mdl-grid" style="margin: 8px 0 0 0; padding:0">
@@ -56,10 +54,6 @@
                         class="mdl-cell mdl-cell--12-col mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
                   ログイン
                 </button>
-              </div>
-
-              <div style="margin-top:8px">
-                <a href="#" id="reset-link">パスワードをお忘れの方</a>
               </div>
 
               <p id="message" aria-live="polite"></p>
@@ -119,32 +113,17 @@
 
         try {
           await auth.signInWithEmailAndPassword(email, password);
-          msg('ログインしました。', true);
+          msg('!', true);
           // onAuthStateChanged で遷移させる場合はここで何もしない
         } catch (err) {
           console.error(err);
           if (err && err.code) {
             switch (String(err.code)) {
-              case 'auth/invalid-email':
-                markField(emailEl, true);
-                msg('メールアドレスの形式が正しくありません。');
-                break;
-              case 'auth/user-disabled':
-                msg('このユーザーは無効化されています。');
-                break;
-              case 'auth/user-not-found':
-              case 'auth/wrong-password':
-                markField(passEl, true);
-                msg('メールまたはパスワードが違います。');
-                break;
-              case 'auth/too-many-requests':
-                msg('試行回数が多すぎます。しばらくしてから再試行してください。');
-                break;
               default:
-                msg('ログインに失敗しました。時間をおいて再試行してください。');
+                msg('!!');
             }
           } else {
-            msg('ログインに失敗しました。時間をおいて再試行してください。');
+            msg('!!');
           }
         }
       });

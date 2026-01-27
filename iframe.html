@@ -41,37 +41,29 @@
   <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
 
     <!-- Header -->
-    <header class="mdl-layout__header mdl-color-text--white mdl-color--light-red-700">
-      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-        <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
-          <h3><i class="material-icons">chat_bubble_outline</i> Easy Chat</h3>
+<header class="mdl-layout__header mdl-color-text--white mdl-color--light-red-700">
+  <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+    <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
 
-          <!-- 右寄せスペース -->
-          <div class="mdl-layout-spacer"></div>
+      <!-- ←★ ここにユーザーコンテナを先頭配置（左上） -->
+      <div id="user-container" class="mdl-layout__header-row">
+        <!-- サインアウト（ログイン時のみ表示） -->
+        <button hidden id="sign-out"
+                class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white"
+                title="サインアウト">
+          <i class="material-icons" style="vertical-align:middle;margin-right:4px;">logout</i> Sign-out
+        </button>
 
-          <!-- ユーザー情報＆ボタン -->
-          <div id="user-container" class="mdl-layout__header-row">
-            <div hidden id="user-pic"></div>
-            <div hidden id="user-name" style="margin-right:12px;"></div>
-
-            <!-- ★ サインアウト（ログイン時のみ表示） -->
-            <button hidden id="sign-out"
-                    class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white"
-                    title="サインアウト">
-              <i class="material-icons" style="vertical-align:middle;margin-right:4px;">logout</i> Sign-out
-            </button>
-
-            <!-- ★ サインイン（未ログイン時のみ表示） -->
-            <button hidden id="sign-in"
-                    class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white"
-                    title="ログインへ">
-              <i class="material-icons" style="vertical-align:middle;margin-right:4px;">account_circle</i> Sign-in
-            </button>
-          </div>
-        </div>
+        <!-- サインイン（未ログイン時のみ表示） -->
+        <button hidden id="sign-in"
+                class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white"
+                title="ログインへ">
+          <i class="material-icons" style="vertical-align:middle;margin-right:4px;">account_circle</i> Sign-in
+        </button>
       </div>
-    </header>
-
+    </div>
+  </div>
+</header>
     <!-- Main -->
     <main class="mdl-layout__content mdl-color--grey-100">
       <div id="messages-card-container" class="mdl-cell mdl-cell--12-col mdl-grid">

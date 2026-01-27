@@ -1,51 +1,5 @@
-
 html, body {
-  font-family: 'Roboto', 'Helvetica', sans-serif;
-}
-main, #messages-card {
-  height: 100%;
-  padding-bottom: 0;
-}
-#messages-card-container {
-  height: 95%;
-  padding-bottom: 0;
-}
-#messages-card {
-  margin-top: 15px;
-}
-.mdl-layout__header-row span {
-  margin-left: 15px;
-  margin-top: 17px;
-}
-.mdl-grid {
-  max-width: 1024px;
-  margin: auto;
-}
-.material-icons {
-  font-size: 36px;
-  top: 8px;
-  position: relative;
-}
-.mdl-layout__header-row {
-  padding: 0;
-  margin: 0 auto;
-}
-#messages-box.mdl-card__supporting-text {
-  width: auto;
-  height: 100%;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-#messages {
-  overflow-y: auto;
-  margin-bottom: 10px;
-  height: calc(100% - 80px);
-}
-#message-filler {
-  flex-grow: 1;
-}
-.message-container:first-of-type {
-  border-top-width: 0;
+ -top-width: 0;
 }
 .message-container {
   display: block;
@@ -60,46 +14,6 @@ main, #messages-card {
 }
 .message-container .pic {
   background-image: url('/images/profile_placeholder.png');
-  background-repeat: no-repeat;
-  width: 30px;
-  height: 30px;
-  background-size: 30px;
-  border-radius: 20px;
-}
-.message-container .spacing {
-  display: table-cell;
-  vertical-align: top;
-}
-.message-container .message {
-  display: table-cell;
-  width: calc(100% - 40px);
-  padding: 5px 0 5px 10px;
-}
-.message-container .name {
-  display: inline-block;
-  width: 100%;
-  padding-left: 40px;
-  color: #bbb;
-  font-style: italic;
-  font-size: 12px;
-  box-sizing: border-box;
-}
-#message-form {
-  display: flex;
-  flex-direction: row;
-  width: calc(100% - 48px);
-  float: left;
-}
-#image-form {
-  display: flex;
-  flex-direction: row;
-  width: 48px;
-  float: right;
-}
-#message-form .mdl-textfield {
-  width: calc(100% - 100px);
-}
-#message-form button, #image-form button {
   width: 100px;
   margin: 15px 0 0 10px;
 }
@@ -111,16 +25,17 @@ main, #messages-card {
   justify-content: space-between;
 }
 #user-container {
-  position: absolute;
-  display: flex;
+  /* ▼▼ 右寄せの原因だった absolute 固定を解除 ▼▼ */
   flex-direction: row;
-  top: 22px;
-  width: 100%;
-  right: 0;
-  padding-left: 10px;
-  justify-content: flex-end;
-  padding-right: 10px;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start !important;
+
+  margin-left: 10px;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
+
 #user-container #user-pic {
   top: -3px;
   position: relative;
@@ -134,36 +49,8 @@ main, #messages-card {
 }
 #user-container #user-name {
   font-size: 16px;
-  line-height: 36px;
-  padding-right: 10px;
-  padding-left: 20px;
-}
-#image-form #submitImage {
-  width: auto;
-  padding: 0 6px 0 1px;
-  min-width: 0;
-}
-#image-form #submitImage .material-icons {
-  top: -1px;
-}
-.message img {
-  max-width: 300px;
-  max-height: 200px;
-}
-#mediaCapture {
-  display: none;
-}
-@media screen and (max-width: 610px) {
-  header {
-    height: 70px;
-  }
-  #user-container {
-    top: 72px;
-    background-color: rgb(3,155,229);
-    height: 38px;
-    padding-top: 3px;
-    padding-right: 2px;
-    display: none;
+  !important;
+    padding-top: 0 !important;
   }
   #user-container #user-pic {
     top: 2px;
@@ -172,13 +59,85 @@ main, #messages-card {
     background-size: 33px;
   }
 }
-.mdl-textfield__label:after {
-  background-color: #0288D1;
+
+/* #sign-in:not([hidden]) {
+  display: inline-flex !important;
+  align-items: center;
 }
-.mdl-textfield--floating-label.is-focused .mdl-textfield__label {
-  color: #0288D1;
+
+/* MDL ヘッダーで隠れないように */
+.mdl-layout__header-row {
+  overflow: visible !important;
+  display: flex;
+  align-items: center;
 }
-.mdl-button .material-icons {
-  top: -1px;
-  margin-right: 5px;
+
+/* 左側に並び順で固定したいので order を使用 */
+#user-container {
+  order: -1; /* ←これでヘッダー内の最先頭に来る */
+}
+
+.mdl-layout__header {
+  position: relative;
+  z-index: 10;
+}
+#user-container,
+#sign-out,
+#sign-in {
+  position: relative;
+  z-index: 11;
+}
+
+/* モバイル時オーバーフロー補正 */
+@media (max-width: 480px) {
+  #user-container {
+    max-width: 80vw;
+    flex-wrap: nowrap;
+  }
+  #user-container .mdl-button {
+    padding: 0 6px;
+    min-width: 0;
+  }
+}
+/* ===== ヘッダーの左余白を完全にゼロにする上書き ===== */
+
+/* ヘッダー内の grid/cell の左右パディングを殺す */
+.mdl-layout__header .mdl-grid,
+.mdl-layout__header .mdl-cell {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ヘッダー行自体の左右パディング/マージンもゼロに */
+.mdl-layout__header-row {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* 既存の order:-1 を活かしつつ、#user-container を完全に左端へ */
+#user-container {
+  margin-left: 0 !important; /* ← ここが残っていると数pxずれる */
+  padding-left: 0 !important;
+}
+
+/* （保険）ヘッダーブランドやタイトルが残っている場合は消す */
+.mdl-layout__header-row > h3 {
+  display: none !important;
+}
+
+/* モバイル時、過去の display:none や top:72px を完全に無効化して左上へ */
+@media screen and (max-width: 610px) {
+  #user-container {
+    display: inline-flex !important;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    background: transparent !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
 }
