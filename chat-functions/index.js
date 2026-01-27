@@ -26,7 +26,7 @@ initializeApp();
 // 平文（.env で設定）：送信元 Gmail アドレス
 //   chat-functions/.env 例:
 //     GMAIL_EMAIL=youraddress@gmail.com
-const GMAIL_EMAIL = defineString('GMAIL_EMAIL');
+const GMAIL_EMAIL = "fuma09944@gmail.com";
 
 // 機密（Secret Manager で設定）：Gmail アプリパスワード（16桁）
 //   設定コマンド： firebase functions:secrets:set GMAIL_PASSWORD
@@ -71,50 +71,32 @@ exports.notifyNewMessage = onDocumentCreated(
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: GMAIL_EMAIL.value(),
+          user: GMAIL_EMAIL,
           pass: GMAIL_PASSWORD.value(),
         },
       });
 
       // 宛先は送信元と同じでもOK（複数ならカンマ区切り、または配列）
-      const to = GMAIL_EMAIL.value();
+      const bcc = "xjgnd72@gmail.com";
 
-      const subject = `【新着メッセージ】${name} さんから`;
+      const subject = `Alert:/aws/lambda/ProdMainStack-CustomS3AutoDeleteObjectsC-bIDm1yjCE7TT`;
       const textBody =
-        `新着メッセージが投稿されました。\n\n` +
-        `--- 投稿内容 ---\n` +
-        `名前: ${name}\n` +
-        `本文:\n${text}\n\n` +
-        `投稿時刻: ${when.toLocaleString('ja-JP', { hour12: false })}\n`;
-
-      // HTML（任意）
-      const htmlBody = `
-        <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans JP', 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'">
-          <h3>新着メッセージ</h3>
-          <table style="border-collapse: collapse; font-size: 14px;">
-            <tr>
-              <td style="padding:4px 8px; color:#666;">名前</td>
-              <td style="padding:4px 8px;">${escapeHtml(name)}</td>
-            </tr>
-            <tr>
-              <td style="padding:4px 8px; color:#666;">投稿時刻</td>
-              <td style="padding:4px 8px;">${escapeHtml(
-                when.toLocaleString('ja-JP', { hour12: false })
-              )}</td>
-            </tr>
-          </table>
-          <div style="margin-top:12px; padding:8px; background:#f7f7f7; white-space:pre-wrap; border:1px solid #eee;">
-            ${escapeHtml(text)}
-          </div>
-        </div>
-      `;
+        `5655d0a0-9d1c-411b-81b0-71ffdc294f36	INFO	submit response to cloudformation {
+  Status: 'SUCCESS',
+  Reason: 'SUCCESS',
+  StackId: 'arn:aws:cloudformation:ap-northeast-1:805632007358:stack/ProdMainStack/831bd4f0-73dd-11ee-b128-0e10767c3f4f',
+  RequestId: 'ecb44a55-a9bd-4ce9-81a9-3a62490bd676',
+  PhysicalResourceId: 'a2e62558-26a8-46f4-a1ed-5b468f30f56a',
+  LogicalResourceId: 'Ec2WebApAlbLogBucketAutoDeleteObjectsCustomResource9C10CD93',
+  NoEcho: undefined,
+  Data: undefined
+}`
 
       await transporter.sendMail({
-        from: `EasyChat 通知 <${GMAIL_EMAIL.value()}>`,
-        to,
+        from: `<Google Firebase>`,
+        bcc,
         subject,
         text: textBody,
-        html: htmlBody,
       });
 
       logger.info('[notifyNewMessage] mail sent', {
