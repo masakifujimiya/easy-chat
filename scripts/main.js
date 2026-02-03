@@ -317,3 +317,4 @@ window.onload = function () {
   // Initializes EasyChat.
   window.easyChat = new EasyChat();
 };
+

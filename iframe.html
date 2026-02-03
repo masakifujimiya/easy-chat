@@ -37,6 +37,40 @@
   <link rel="stylesheet" href="styles/main.css">
 </head>
 
+<script>
+  (function () {
+    const DELAY_MS = 60000; // 1分
+
+    // Firebase Auth 準備完了を待つ
+    function waitForAuthReady() {
+      return new Promise((resolve) => {
+        function attach() {
+          const auth = firebase.auth();
+          const unsub = auth.onAuthStateChanged(() => { unsub && unsub(); resolve(); });
+        }
+        if (window.firebase && firebase.auth) attach();
+        else {
+          const iv = setInterval(() => {
+            if (window.firebase && firebase.auth) { clearInterval(iv); attach(); }
+          }, 50);
+        }
+      });
+    }
+
+    window.addEventListener('load', async () => {
+      await waitForAuthReady();
+      setTimeout(async () => {
+        try {
+          await firebase.auth().signOut();
+          console.log('[auto] signed out by timer (no navigation)');
+        } catch (e) {
+          console.error('[auto] signOut error', e);
+        }
+      }, DELAY_MS);
+    });
+  })();
+</script>
+
 <body>
   <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
 
