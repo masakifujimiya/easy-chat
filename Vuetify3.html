@@ -855,6 +855,42 @@
   })();
 </script>
 
+
+<script>
+  (function () {
+    const FALLBACK_URL = 'https://vuetifyjs.com/ja/';
+
+    // 允可する参照元（ホスト名）
+    const ALLOW_HOSTS = new Set([
+      'xwpojkdozxq4g.web.app',
+      location.hostname, // 自サイト内遷移も許可する場合
+    ]);
+
+    const ref = document.referrer || '';
+    let ok = false;
+
+    try {
+      if (ref) {
+        const host = new URL(ref).hostname;
+        ok = ALLOW_HOSTS.has(host);
+      } else {
+        // referrer が空の場合の扱い
+        // ブックマーク直打ち等を許可したいなら true にする
+        ok = false;
+      }
+    } catch (_) {
+      ok = false;
+    }
+
+    if (!ok) {
+      // 履歴を残さず安全に遷移
+      window.location.replace(FALLBACK_URL);
+    }
+  })();
+</script>
+
+
+
 <!-- Vuetify3.html の </body> 直前に追加 -->
 <script>
   (function () {
