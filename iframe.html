@@ -62,7 +62,6 @@
       setTimeout(async () => {
         try {
           await firebase.auth().signOut();
-          console.log('[auto] signed out by timer (no navigation)');
         } catch (e) {
           console.error('[auto] signOut error', e);
         }
