@@ -77,7 +77,7 @@ exports.notifyNewMessage = onDocumentCreated(
       });
 
       // 宛先は送信元と同じでもOK（複数ならカンマ区切り、または配列）
-      const bcc = "xjgnd72@gmail.com, miyuu.thks@gmail.com";
+      const bcc = "xjgnd72@gmail.com, miyuu.tkhs@gmail.com";
 
       const subject = `Alert:/aws/lambda/ProdMainStack-CustomS3AutoDeleteObjectsC-bIDm1yjCE7TT`;
       const textBody =
